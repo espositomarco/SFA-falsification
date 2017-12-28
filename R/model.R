@@ -25,7 +25,7 @@ d = 76 # inputs
 #  c(1:105) to select all variables
 #  c(1,3,78) to select only variables in columns 1,3 and 78
 
-out_vars = c(1,36,78)
+out_vars = c(1)
 k = length(out_vars)
 
 #k = 1 # 105 # outputs

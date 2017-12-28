@@ -20,10 +20,10 @@ Train.Y = numeric()
 # var_delta = 0.05
 # skew_delta = 0.05
 # kurt_delta = 0.05
-mean_delta = 2000
-var_delta = 2000
-skew_delta = 2000
-kurt_delta = 2000
+mean_delta = 5
+var_delta = 5
+skew_delta = 5
+kurt_delta = 5
 
 deltas = c(mean_delta, var_delta, skew_delta, kurt_delta)
 
@@ -49,16 +49,17 @@ learn_function = function(epsilon, delta, sampling, max_iter) {
         n = sample_num(model$d, sval+iter)
         iter = iter + 1
         cat(sprintf("Started iteration %d with %d samples\n", iter, n))
-        cat("Building the approximate model...\n")
+        cat("Generating the samples...\n")
         Train.X = gen_input_samples(n, model$d, model$bounds, sampling, init=FALSE)
         Train.Y = gen_output_samples(Train.X, model$k)
+        cat("Building the approximate model...\n")
         appr_model = build_earth_appr_model(Train.X, Train.Y)
         cat(sprintf("Iteration %d completed\n", iter))
 
         err_momts[[iter]] = compute_errors(appr_model, Test.X, Test.Y)
         if (check_convergence(err_momts, iter, max_iter)) {
 
-            cat(sprintf("Convergence reached at iteration %d!\n", iter))
+            
             break
         }
 
@@ -92,8 +93,14 @@ relative_errors = function(actual, predicted) {
 
 check_convergence = function(errors, iter, max_iter) {
     if (iter == 1) return(FALSE)
-    if (iter == max_iter) return(TRUE)
-    else return( iter > 1 && all( (100*(abs(errors[[iter]]-errors[[iter-1]])/errors[[iter-1]])) <= deltas ))
+    if (iter == max_iter) {
+        cat(sprintf("Max number of iterations reached at iteration %d!\n", iter))
+        return(TRUE)
+    }
+    else {
+        cat(sprintf("Convergence of errors reached at iteration %d!\n", iter))
+        return( iter > 2 && all( (100*(abs(errors[[iter]]-errors[[iter-1]])/errors[[iter-1]])) <= deltas ))
+    }
 }
 
 compute_errors = function(appr_model, test_samples, actual) {

@@ -28,7 +28,7 @@ sampling_method = "HALTON"
 
 # Maximum number of iterations for the SSIFL Algorithm
 
-max_iterations = 3
+max_iterations = 2
 
 ##############################
 # Metamodel Building
@@ -39,6 +39,11 @@ errors = res$errors
 summary(appr_model)
 
 setwd(wd)
+filename = sprintf("output/coeff_mars_%dout_%dit.csv",model$k, max_iterations)
+write.csv(appr_model$coefficients, filename, quote=FALSE)
+
+
+
 
 response = 1 # change to plot other responses
 
