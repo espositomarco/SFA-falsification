@@ -10,7 +10,7 @@ param weight1 :=
               X1 Y2 0.25;
 param weight2 := 
               X1 Y1 2 
-              X1 Y2 -0.132;
+              X1 Y2 -1.32e-01;
 
 param threshold := Y1 6 
                    Y2 6;

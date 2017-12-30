@@ -17,6 +17,9 @@ library(earth)
 
 wd = getwd()
 
+# Read existing sample files?
+readSamples = TRUE
+
 # Accuracy
 epsilon = 0.3
 
@@ -28,12 +31,12 @@ sampling_method = "HALTON"
 
 # Maximum number of iterations for the SSIFL Algorithm
 
-max_iterations = 2
+max_iterations = 3
 
 ##############################
 # Metamodel Building
 ##############################
-res = learn_function(epsilon, delta, sampling_method, max_iterations)
+res = learn_function(epsilon, delta, sampling_method, max_iterations, readSamples,wd)
 appr_model = res$appr_model
 errors = res$errors
 summary(appr_model)
