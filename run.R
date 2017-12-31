@@ -13,6 +13,8 @@ source("R/variable_naming.R")
 source("R/appr_model.R")
 source("R/incr_fun_learning.R")
 source("R/getBounds.R")
+source("R/model_translation.R")
+
 library(earth)
 
 wd = getwd()
@@ -27,7 +29,7 @@ epsilon = 0.3
 delta = 0.3
 
 # "HALTON" for Halton Sequence, "UNIFORM" for random uniform
-sampling_method = "HALTON"
+sampling = "HALTON"
 
 # Maximum number of iterations for the SSIFL Algorithm
 
@@ -36,14 +38,14 @@ max_iterations = 3
 ##############################
 # Metamodel Building
 ##############################
-res = learn_function(epsilon, delta, sampling_method, max_iterations, readSamples,wd)
+res = learn_function(epsilon, delta, sampling, max_iterations, readSamples,wd)
 appr_model = res$appr_model
 errors = res$errors
-summary(appr_model)
+#summary(appr_model)
 
 setwd(wd)
-filename = sprintf("output/coeff_mars_%dout_%dit.csv",model$k, max_iterations)
-write.csv(appr_model$coefficients, filename, quote=FALSE)
+coeff_file_name = sprintf("output/coeff_mars_%dout_%dit.csv",model$k, max_iterations)
+write.csv(appr_model$coefficients, coeff_file_name, quote=FALSE)
 
 
 
@@ -52,5 +54,19 @@ response = 1 # change to plot other responses
 
 plotmo(appr_model, nresponse=response)
 
-filename = sprintf("output/m_%do_%dit.rda", model$k, max_iterations)
-save(res, file=filename)
+model_file_name = sprintf("output/m_%do_%dit.rda", model$k, max_iterations)
+save(res, file=model_file_name)
+
+
+
+
+
+
+
+
+
+data = MARS_coeff_to_AMPL(coeff_file_name)
+
+data$bounds = model$bounds
+
+write.AMPL.data(data)

@@ -25,7 +25,7 @@ d = 76 # inputs
 #  c(1:105) to select all variables
 #  c(1,3,78) to select only variables in columns 1,3 and 78
 
-out_vars = c(1)
+out_vars = c(1:105)
 k = length(out_vars)
 
 #k = 1 # 105 # outputs
@@ -64,17 +64,31 @@ writeParameters = function(X) {
 # Parses the output of a simulation and returns the KPIs values
 # in a vector of length k
 parseSimulationResults = function(res) {
+	# R = numeric(0)
+	# allValues = numeric(0)
+	# res_as_list = strsplit(res, "\n")
+	# for(i in 2:4) {
+	# 	values = strsplit(res_as_list[[i]], " = ")[[1]][2]
+	# 	values = strsplit(values[[1]], ",")
+	# 	for (v in values) R = c(allValues, as.double(v))
+	# }
+
+	# for(var in out_vars) {
+	# 	R = c(R, as.double(allValues[var]))
+	# }
+	# return(R[1:k])
+
 	R = numeric(0)
 	allValues = numeric(0)
-	res_as_list = strsplit(res, "\n")
+	res_as_list = strsplit(res, "\n")[[1]]
 	for(i in 2:4) {
 		values = strsplit(res_as_list[[i]], " = ")[[1]][2]
 		values = strsplit(values[[1]], ",")
-		for (v in values) R = c(allValues, as.double(v))
+		for (v in values) allValues = c(allValues, as.double(v))
 	}
 
 	for(var in out_vars) {
 		R = c(R, as.double(allValues[var]))
 	}
-	return(R[1:k])
+	return(R)
 }

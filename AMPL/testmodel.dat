@@ -1,0 +1,23 @@
+data;
+
+set INPUTS := X1 ;
+set OUTPUTS := Y1, Y2;
+
+param knot := X1 3 ;
+
+param weight1 := 
+              X1 Y1 -4 
+              X1 Y2 0.25;
+param weight2 := 
+              X1 Y1 2 
+              X1 Y2 -1.32e-01;
+
+param threshold := Y1 6 
+                   Y2 6;
+
+param lb := X1 2 ;
+param ub := X1 12 ;
+
+param intercept := 
+                Y1 2
+                Y2 7;
