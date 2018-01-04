@@ -19,6 +19,9 @@ library(earth)
 
 wd = getwd()
 
+# Threshold value for the KPIs
+THRESHOLD = 0.9
+
 # Read existing sample files?
 readSamples = TRUE
 
@@ -33,7 +36,7 @@ sampling = "HALTON"
 
 # Maximum number of iterations for the SSIFL Algorithm
 
-max_iterations = 3
+max_iterations = 2
 
 ##############################
 # Metamodel Building
@@ -48,25 +51,22 @@ coeff_file_name = sprintf("output/coeff_mars_%dout_%dit.csv",model$k, max_iterat
 write.csv(appr_model$coefficients, coeff_file_name, quote=FALSE)
 
 
-
-
+plot_file_name = sprintf("plots/m_%do_%dit.pdf", model$k, max_iterations)
+pdf(file=plot_file_name)
 response = 1 # change to plot other responses
 
 plotmo(appr_model, nresponse=response)
+dev.off()
+
 
 model_file_name = sprintf("output/m_%do_%dit.rda", model$k, max_iterations)
 save(res, file=model_file_name)
 
 
-
-
-
-
-
-
-
 data = MARS_coeff_to_AMPL(coeff_file_name)
 
 data$bounds = model$bounds
+data$threshold = THRESHOLD;
 
 write.AMPL.data(data)
+write.AMPL.model(model$k)

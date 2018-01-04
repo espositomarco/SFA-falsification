@@ -1,0 +1,4 @@
+option gurobi_options 'predual -1 multiobj 1';
+solve;
+#expand MyObjective;
+display X;

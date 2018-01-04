@@ -2,153 +2,143 @@
 
 source("R/getBounds.R")
 
+library(gtools)
+
 MARS_coeff_to_AMPL = function(coeff_file_name) {
 	coeff = read.csv(coeff_file_name, header=TRUE,
 		stringsAsFactors=FALSE)
 
-	emptyrow <- data.frame(matrix(0, ncol = ncol(coeff)-1, nrow = 1),
-		stringsAsFactors=FALSE)
-
 	intercepts = as.data.frame(coeff[1,(2:ncol(coeff))])
-	colnames(intercepts) = sapply(
-		(1:model$k), 
-		function(x) {paste("Y",x,sep="")})
 
+	coeff = coeff[-1,]
+	df = as.data.frame(
+		matrix(
+			rep(0,nrow(coeff)*2),
+			nrow=nrow(coeff), ncol=2))
 
-	knots <- data.frame(
-                 knot=character(),
-                 stringsAsFactors=FALSE)
+	colnames(df) = c("variable", "knot")
 
-	weight1 <- emptyrow
-	colnames(weight1) = (1:ncol(weight1))
-	weight2 <- emptyrow
-	colnames(weight2) = (1:ncol(weight2))
-	
+	coeff = cbind(coeff, df)   
 
-	for(i in (2:nrow(coeff))){
+	for (i in 1:nrow(coeff)) {
 		row = coeff[i,]
-		term = gsub("h\\(|\\)","",row$X)
-		tl = strsplit(term, "-")[[1]]
-		if (substring(tl[1], 1, 1)!="X") {
-			w_type = 1
-			var = tl[2]
-			knot = tl[1]
-		} else {
-			w_type = 2
-			var = tl[1]
-			knot = tl[2]
-		}
-
-		if (!(var %in% row.names(knots))) {
-			nr<-data.frame(knot=knot)
-			rownames(nr) = c(var)
-			knots = rbind(knots,nr)
-		}
-
-
-		if (w_type == 1){
-			if (!(var %in% row.names(weight1))) {
-				nw1 = data.frame(coeff[i,(2:ncol(coeff))])
-				colnames(nw1) = colnames(weight1)
-				rownames(nw1) = c(var)
-				weight1 = rbind(weight1,nw1)
-			} else {
-				weight1[var,] = coeff[i,(2:ncol(coeff))]
-			}
-
-			if (!(var %in% row.names(weight2))) {
-				nw2 = emptyrow
-				colnames(nw2) = colnames(weight2)
-				rownames(nw2) = c(var)
-				weight2 = rbind(weight2,nw2)
-			}
-		} else {
-			if (!(var %in% row.names(weight2))) {
-				nw2 = data.frame(coeff[i,(2:ncol(coeff))])
-				colnames(nw2) = colnames(weight2)
-				rownames(nw2) = c(var)
-				weight2 = rbind(weight2,nw2)
-			} else {
-				weight2[var,] = coeff[i,(2:ncol(coeff))]
-			}
-
-			if (!(var %in% row.names(weight1))) {
-				nw1 = emptyrow
-				colnames(nw1) = colnames(weight1)
-				rownames(nw1) = c(var)
-				weight1 = rbind(weight1,nw1)
-			}
-		}
-
-
+		varKnot = getVarAndKnot(row$X)
+		var = varKnot$var
+		knot = varKnot$knot
+		row$variable = var
+		row$knot = knot
+		coeff[i,] = row
 	}
 
-	w1 = data.frame(weight1[-1,])
-	colnames(w1) = colnames(weight1)
-	rownames(w1) = rownames(weight1)[-1]
+	coeff = coeff[order(coeff$knot),]
 
-	w2 = data.frame(weight2[-1,])
-	colnames(w2) = colnames(weight2)
-	rownames(w2) = rownames(weight2)[-1]
+	inputs = mixedsort(unique(coeff$var))
+	d = length(inputs)
+	k = ncol(coeff) - 3
+
+	weights = matrix(rep(list(),d*k ), nrow=d, ncol=k)
+
+	rownames(weights) = inputs
+	colnames(weights) = colnames(coeff)[2:(k+1)]
+
+	knots = list()
+	for(v in inputs){
+		knots[[v]] = list()
+	}
+
+    X_has_init_piece = c()
+
+	for(i in (1:nrow(coeff))){
+        knot = coeff[i,]$knot		
+		var = coeff[i,]$var
+
+        if(knot<0) {
+            X_has_init_piece = c(X_has_init_piece, var)
+        }
+        knot = abs(coeff[i,]$knot)
+		if (!(knot %in% knots[[var]])) {
+			knots = addKnot(knots, var, knot)
+		}
+
+		for(target in colnames(weights)){
+			weights = addCoeff(weights, var, target, coeff[i,target]) 
+		}
+	}
+
+    X_has_init_only = c()
+    X_has_init = c()
+    for(v in X_has_init_piece){
+        if(length(knots[[v]]) > 1){
+            X_has_init = c(X_has_init, v)
+        } else{
+            X_has_init_only = c(X_has_init_only, v)
+        }
+    }
+
+    for(v in rownames(weights)){
+        for(t in colnames(weights)){
+            if(v %in% X_has_init_only){
+                weights[v,t][[1]] = c(weights[v,t][[1]], 0)
+            } else if(!(v %in% X_has_init)){
+                weights[v,t][[1]] = c(0,weights[v,t][[1]])
+            }
+        }
+    }
 
 	return(list(knots=knots, intercepts=intercepts,
-		weight1=w1, weight2=w2))
+		weights=weights))
 }
 
 
 write.AMPL.data = function(data) {
 	fileConn<-file("AMPL/marsmodel.dat")
-	text = c("data;","set INPUTS := ")
-	inputs = sprintf("%s",rownames(data$knots))
-	text = c(text,inputs, ";")
-	outputs = sprintf("%s",colnames(data$intercepts))
-	text = c(text, "set OUTPUTS := ",outputs, ";")
-	
-	knots = c()
-	for (knot in rownames(data$knots)){
-		knots = c(knots, paste(knot, data$knots[knot,]))
+	text = c("data;\n","set INPUTS := ")
+	inputs = paste(names(data$knots), collapse=" ")
+	text = c(text,inputs, ";\n")
+	outputs = paste(names(data$intercepts), collapse=" ")
+	text = c(text, "\nset OUTPUTS := ",outputs, ";\n")
+
+	npiece = c()
+	for (v in names(data$knots)){
+        npiece=c(npiece,paste(v, length(data$knots[[v]])+1 ))		
 	}
-	text = c(text, "param knot := ", knots, ";")
+
+	text = c(text, "\n\nparam npiece := ", paste(npiece,collapse="\n"), ";\n")
+
+	knots = c()
+
+
+	for(v in names(data$knots)){
+		for(i in 1:(length(data$knots[[v]])))
+			knots = c(knots, 
+				paste(v, 
+					paste(i,data$knots[[v]][[i]])
+			))
+	}
+
+	text = c(text, "\nparam knot := ", paste(knots, collapse="\n"), ";\n")
 
 	intercepts = c()
-	for (obj in colnames(data$intercepts)){
+	for (obj in names(data$intercepts)){
 		intercepts = c(intercepts, 
-			paste(obj, data$intercepts[,obj]))
+			paste(paste(obj, data$intercepts[,obj])))
 	}
-	text = c(text, "param intercept := ", intercepts, ";")
-
-	weights1 = c()
-	for(i in rownames(data$weight1)){
-		for (j in colnames(data$weight1)){
-			weights1 = c(weights1,
-				paste(paste(i,paste("Y",j,sep="")),data$weight1[i,j]))
-		}
-	}
-
-	text = c(text, "param weight1 := ",weights1, ";")
-
-	weights2 = c()
-	for(i in rownames(data$weight2)){
-		for (j in colnames(data$weight2)){
-			weights2 = c(weights2,
-				paste(paste(i,paste("Y",j,sep="")),data$weight2[i,j]))
-		}
-	}
-
-	text = c(text, "param weight2 := ",weights2, ";")
+	text = c(text, "\nparam intercept := ", intercepts, ";\n")
 
 
-	tss = c()
-	for (obj in colnames(data$intercepts)){
-		tss = c(tss, 
-			paste(obj, "0.9"))
-	}
-	text = c(text, "param threshold := ", tss, ";")
+	# tss = c()
+ #    for (obj in colnames(data$intercepts)){
+ #        tss = c(tss, 
+ #            paste(obj, "0.9"))
+ #    }
+ #    text = c(text, "\nparam threshold := ", tss, ";")
+
+    text = c(text, "\nparam threshold := ", data$threshold, " ;")
 
 
 
 
-	x_nums = as.integer(sapply(rownames(data$knots), function(x) {gsub("X","",x)}))
+	x_nums = as.integer(sapply(names(data$knots), function(x) {gsub("X","",x)}))
 
 	lb = c()
 	ub = c()
@@ -158,12 +148,85 @@ write.AMPL.data = function(data) {
 		ub = c(ub, paste(paste("X",i,sep=""),upr(data$bounds, i)))
 	}
 
-	text = c(text, "param lb :=", lb, ";")
-	text = c(text, "param ub :=", ub, ";")
+	text = c(text, "\nparam lb :=", lb, ";")
+	text = c(text, "\nparam ub :=", ub, ";")
+
+
+    weights = c()
+    for (v in rownames(data$weights)){
+        for( t in colnames(data$weights)){
+            wvt = data$weights[v,t][[1]]
+            for (i in (1:length(wvt))){
+                weights = c(weights,
+                        paste(v,
+                            paste(t, 
+                                paste(i, wvt[i])
+                    )))
+            }
+        }
+    }
+
+    text = c(text, "\nparam weight := ", paste(weights,collapse="\n"), ";")
+
+	writeLines(text, fileConn)
+	return(close(fileConn))
+}
+
+
+addKnot = function(knots, i, value) {
+	knots[[i]]= c(knots[[i]],value)
+	return(knots)
+}
+
+addCoeff = function(weights, i, j, v) {
+	weights[i,j][[1]] = c(weights[i,j][[1]], v)
+	return(weights)
+}
+
+getVarAndKnot = function(term) {
+	term = gsub("h\\(|\\)","",term)
+	tl = strsplit(term, "-")[[1]]
+	if (substring(tl[1], 1, 1)!="X") {
+		w_type = 1
+		var = tl[2]
+		knot = -as.numeric(tl[1])
+	} else {
+		w_type = 2
+		var = tl[1]
+		knot = as.numeric(tl[2])
+	}
+	return(list(var=var, knot=knot))
+
+}
 
 
 
+write.AMPL.model = function(k){
+fileConn<-file("AMPL/marsmodel.mod")
+	text = c("set INPUTS;","
+set OUTPUTS;","
+param npiece {INPUTS} integer >= 1;","
+param knot {i in INPUTS, p in 1..npiece[i]-1};","
+param weight {i in INPUTS, o in OUTPUTS, p in 1..npiece[i]};","
+#param threshold {OUTPUTS};","
+param threshold;","
+param lb {i in INPUTS};","
+param ub {i in INPUTS} > lb[i];","
+param intercept {OUTPUTS};","
+var X {i in INPUTS} >= lb[i], <= ub[i];")
 
+	objective = "maximize MyObjective%d:\n 
+		intercept[\"Y%d\"] +\n
+		sum {i in INPUTS} \n
+			<< {p in 1..npiece[i]-1} knot[i,p];\n
+			   {p in 1..npiece[i]} weight[i,\"Y%d\",p] >>\n
+				(X[i],knot[i,1]);\n"
+
+	objectives = c()
+	for(j in 1:k){
+		objectives = c(objectives, sprintf(objective,j,j,j))
+	}
+    text = c(text, objectives)
 
 	writeLines(text, fileConn)
 	return(close(fileConn))

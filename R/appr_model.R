@@ -14,6 +14,6 @@ MIN_SCALE = 10
 # Builds an additive MARS model with scaling of Y (if more than 10 samples)
 build_earth_appr_model = function(X, Y, degree=1) {
 	#earth(x=X, y=Y, degree=degree, nfold = CVnFold, Scale.y=(nrow(Y)> MIN_SCALE), keepxy=TRUE)
-	earth(x=X, y=Y, degree=degree, nfold = CVnFold, keepxy=TRUE)
+	earth(x=X, y=Y, degree=degree, nfold = CVnFold, keepxy=TRUE) #, nk=5)
 }
 
