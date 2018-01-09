@@ -15,3 +15,13 @@ lwr = function(bounds, x) { #check x in bounds
 upr = function(bounds,x) { #check x in bounds
 	bounds$upr[x] 
 }
+
+getLowerBounds = function(bounds, u){
+	lower_u = c()
+	return(sapply(u,function(x) {lwr(bounds,x)}))
+}
+
+getUpperBounds = function(bounds, u){
+	upper_u = c()
+	return(sapply(u,function(x) {upr(bounds,x)}))
+}

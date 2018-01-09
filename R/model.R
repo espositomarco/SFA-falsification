@@ -24,7 +24,6 @@ d = 76 # inputs
 #  c(1,3,78) to select only variables in columns 1,3 and 78
 
 out_vars = c(1:105)
-#out_vars = c(3)
 k = length(out_vars)
 
 
@@ -62,9 +61,11 @@ writeParameters = function(X) {
 parseSimulationResults = function(res) {
 	R = numeric(0)
 	allValues = numeric(0)
-	res_as_list = strsplit(res, "\n")[[1]]
-	for(i in 2:4) {
-		values = strsplit(res_as_list[[i]], " = ")[[1]][2]
+	start = length(res)-3
+	end = length(res)-1
+	#res_as_list = strsplit(res, "\n")[[1]]
+	for(i in start:end) {
+		values = strsplit(res[i], " = ")[[1]][2]
 		values = strsplit(values[[1]], ",")
 		for (v in values) allValues = c(allValues, as.double(v))
 	}
@@ -73,4 +74,85 @@ parseSimulationResults = function(res) {
 		R = c(R, as.double(allValues[var]))
 	}
 	return(R)
+}
+
+writeSolutionLambdaHalton = function(X, results,init) {
+	lambda = gen_halton_samples(1, d, bounds,init)
+	fileConn = file(paste(cmd_path, param_file, sep="/"))
+	txt = character()
+	for (var in names(results)) {
+		lambda[X[var]] = results[[var]]
+	}
+
+	for (i in 1:d) {
+	p = sprintf("lambda[%d]=%f", i, lambda[i])
+	txt = c(txt, p)
+		
+	}
+	writeLines(txt, fileConn)
+	close(fileConn)	
+	return(txt)
+}
+
+
+simSolution = function() {
+	setwd(cmd_path)
+	res = system2(sim_command, command_args, stdout=TRUE)
+	start = length(res)-3
+	end = length(res)-1
+
+	R = numeric(0)
+	allValues = numeric(0)
+
+	for(i in start:end) {
+		values = strsplit(res[i], " = ")[[1]][2]
+		values = strsplit(values[[1]], ",")
+		for (v in values) allValues = c(allValues, as.double(v))
+	}
+
+	for(var in out_vars) {
+		R = c(R, as.double(allValues[var]))
+	}
+	return(R)
+}
+
+
+writeSolutionLambdaHalton = function(X, results,init) {
+	lambda = gen_halton_samples(1, d, bounds,init)
+	fileConn = file(paste(cmd_path, param_file, sep="/"))
+	txt = character()
+	for (var in names(results)) {
+		lambda[X[var]] = results[[var]]
+	}
+
+	for (i in 1:d) {
+	p = sprintf("lambda[%d]=%f", i, lambda[i])
+	txt = c(txt, p)
+		
+	}
+	writeLines(txt, fileConn)
+	close(fileConn)	
+	return(txt)
+}
+
+
+writeLambda = function(sol_X, solution, u){
+	fileConn = file(paste(cmd_path, param_file, sep="/"))
+	txt = character()
+	j = 1
+	for(i in (1:d)){
+		if(i %in% sol_X){
+			x = names(sol_X)[match(i, sol_X)]
+			p = sprintf("lambda[%d]=%f", i, solution[x])
+			#lambda = c(lambda, solution[x])
+		} else{
+			p = sprintf("lambda[%d]=%f", i, u[j])
+			#lambda = c(lambda,u[j])
+			j = j+1
+		}
+		txt = c(txt,p)
+	}
+	writeLines(txt, fileConn)
+	close(fileConn)	
+	return(txt)
 }

@@ -14,59 +14,68 @@ source("R/appr_model.R")
 source("R/incr_fun_learning.R")
 source("R/getBounds.R")
 source("R/model_translation.R")
+source("R/cl_options.R")
 
 library(earth)
 
 wd = getwd()
 
-# Threshold value for the KPIs
-THRESHOLD = 0.9
+opt = CommandLineOptions();
+coeff_file_name = sprintf("output/coeff_mars_%dout_%dit_%fthresh_%dpen.csv",model$k, opt$maxiter, opt$threshmars,opt$penalty)
 
-# Read existing sample files?
-readSamples = TRUE
+if(!opt$readcoeff || !file.exists(coeff_file_name)){
+	##############################
+	# Metamodel Building
+	##############################
+	learn_res = learn_function(opt$epsilon, opt$delta, 
+		opt$sampling, opt$maxiter, opt$readsamples, 
+		opt$threshmars,opt$penalty, 
+		opt$pmethod, wd)
+	appr_model = learn_res$appr_model
+	errors = learn_res$errors
 
-# Accuracy
-epsilon = 0.3
-
-# Confidence param
-delta = 0.3
-
-# "HALTON" for Halton Sequence, "UNIFORM" for random uniform
-sampling = "HALTON"
-
-# Maximum number of iterations for the SSIFL Algorithm
-
-max_iterations = 2
-
-##############################
-# Metamodel Building
-##############################
-res = learn_function(epsilon, delta, sampling, max_iterations, readSamples,wd)
-appr_model = res$appr_model
-errors = res$errors
-#summary(appr_model)
-
-setwd(wd)
-coeff_file_name = sprintf("output/coeff_mars_%dout_%dit.csv",model$k, max_iterations)
-write.csv(appr_model$coefficients, coeff_file_name, quote=FALSE)
+	setwd(wd)
+	
+	write.csv(appr_model$coefficients, coeff_file_name, quote=FALSE)
+}
 
 
-plot_file_name = sprintf("plots/m_%do_%dit.pdf", model$k, max_iterations)
-pdf(file=plot_file_name)
-response = 1 # change to plot other responses
-
-plotmo(appr_model, nresponse=response)
-dev.off()
 
 
-model_file_name = sprintf("output/m_%do_%dit.rda", model$k, max_iterations)
-save(res, file=model_file_name)
+
+# mdl_plot_file_name = sprintf("plots/m_%do_%dit_%fthresh_%dpen.pdf", model$k, opt$maxiter, opt$threshmars, opt$penalty)
+# pdf(file=mdl_plot_file_name)
+# response = 1 # change to plot other responses
+
+# plotmo(appr_model, nresponse=response)
+# #plot(appr_model, nresponse=response)
+# dev.off()
+
+# resp_plot_filen_name = sprintf("plots/m_%do_%dit_%fthresh.pdf", model$k, opt$maxiter, opt$threshmars)
+# pdf(file=plot_file_name)
+# response = 1 # change to plot other responses
+
+# # plotmo(appr_model, nresponse=response)
+# plot(appr_model, nresponse=response)
+# dev.off()
+
+
+# model_file_name = sprintf("output/m_%do_%dit.rda", model$k, opt$maxiter)
+# save(learn_res, file=model_file_name)
 
 
 data = MARS_coeff_to_AMPL(coeff_file_name)
 
 data$bounds = model$bounds
-data$threshold = THRESHOLD;
+data$threshold = opt$threshold;
 
-write.AMPL.data(data)
-write.AMPL.model(model$k)
+data_file_name = sprintf("AMPL/marsmdl_%dout_%dit_%fthresh_%dpen.dat",model$k, opt$maxiter, opt$threshmars,opt$penalty)
+mdl_file_name = sprintf("AMPL/marsmdl_%dout_%dit_%fthresh_%dpen.mod",model$k, opt$maxiter, opt$threshmars,opt$penalty)
+
+write.AMPL.data(data, data_file_name)
+
+if(opt$problem=="max") {
+	write.MAX.AMPL.model(data, model$k,mdl_file_name)
+}else{
+	write.MIN.AMPL.model(model$k,mdl_file_name)
+}

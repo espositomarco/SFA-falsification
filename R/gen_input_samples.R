@@ -1,9 +1,9 @@
 library(randtoolbox)
 source("R/getBounds.R")
 
-gen_input_samples = function(n, d, bounds, sampling="HALTON", init=TRUE) {
-	if (sampling=="HALTON") return(gen_halton_samples(n, d, bounds, init))
-	else if (sampling=="UNIFORM") return(gen_rand_input_samples(n,d,bounds))
+gen_input_samples = function(n, d, bounds, sampling="halton", init=TRUE) {
+	if (sampling=="halton") return(gen_halton_samples(n, d, bounds, init))
+	else if (sampling=="uniform") return(gen_rand_input_samples(n,d,bounds))
 	else {
 		print("Using random uniform samping.")
 		return(gen_rand_input_samples(n,d,bounds))
