@@ -25,3 +25,17 @@ getUpperBounds = function(bounds, u){
 	upper_u = c()
 	return(sapply(u,function(x) {upr(bounds,x)}))
 }
+
+getVarValue = function(bounds,i,v){
+	up = upr(bounds, i)
+	lo = lwr(bounds, i)
+	x = v*(up-lo)+lo
+	return(x)
+}
+
+getVarSolution = function(bounds, i, x){
+	up = upr(bounds, i)
+	lo = lwr(bounds, i)
+	v = (x-lo)/(up-lo)
+	return(v)
+}

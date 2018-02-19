@@ -23,10 +23,21 @@ gen_rand_input_samples = function(n, d, bounds) {
 # with each parameter scaled to its range, according to bounds
 gen_halton_samples = function(n, d, bounds, init=TRUE) {
 	X = halton(n, d, init=init)
-	for (i in 1:d) {
-		up = upr(bounds, i)
-		lo = lwr(bounds, i)
-		X[,i] = X[,i] * (up-lo) + lo
-	}
+	# for (i in 1:d) {
+	# 	up = upr(bounds, i)
+	# 	lo = lwr(bounds, i)
+	# 	X[,i] = X[,i] * (up-lo) + lo
+	# }
 	return(X)	
+}
+
+gen.random.inputs = function(n, d){
+	Train.X  = matrix(
+		runif(n*d, 0, 1), 
+		nrow=n, ncol=d)
+	Train.X = as.data.frame(Train.X)
+    colnames(Train.X) = sapply((1:d), function(x){paste("X",x, sep="")})
+
+    return(Train.X)
+
 }

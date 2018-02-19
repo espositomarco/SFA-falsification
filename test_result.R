@@ -9,6 +9,8 @@ source("R/appr_model.R")
 source("R/incr_fun_learning.R")
 source("R/getBounds.R")
 source("R/model_translation.R")
+source("R/sim_utils.R")
+source("R/search.R")
 
 library(GA)
 
@@ -24,12 +26,12 @@ make_option(c("-r", "--runs"), type="integer", default="10",
 make_option(c("-p", "--popsize"), type="integer", default="50", 
           help="Population size for the generic algorithm. [default= %default]", 
           metavar="integer"),
-make_option(c("-m", "--method"), type="character", default="random", 
+make_option(c("-m", "--method"), type="character", default="genetic", 
           help="Search method. (genetic, random) [default= %default]", 
           metavar="character"),
-make_option(c("-t", "--threshold"), type="numeric", default=0.9, 
+make_option(c("-t", "--threshold"), type="numeric", default=0.7, 
               help="Threshold value for the KPIs [default= %default]", metavar="cnumeric"),
-make_option(c("-f", "--filename"), type="character", default="opt_res_MAX.txt", 
+make_option(c("-f", "--filename"), type="character", default="opt_re.txt", 
           help="MILP Solution file name [default= %default]", metavar="character")
 
 )
@@ -47,18 +49,19 @@ res = readChar(res_file_name, file.info(res_file_name)$size)
 
 res = strsplit(res, "\n")[[1]]
 
-solution = list()
+solution = rep(NA, model$d)
 
 for(i in (2:(length(res)-1))) {
 	r = strsplit(res[i], " ")[[1]]
 	r = r[r != ""]
-	var = r[1]
+	var = as.numeric(gsub("X","", r[1]))
 	val = as.numeric(r[2])
-	solution[[var]] = val
+	solution[var] = val
 
 }
 
-sol_X = sapply(names(solution), function(x) {as.numeric(gsub("X","", x))})
+solution.default = merge.solution.default(solution)
+
 
 
 
@@ -78,56 +81,66 @@ getSolutionRandom = function(maxiter,sol_X, solution,threshold,k){
 		lambda = writeSolutionLambdaHalton(sol_X, solution,init)
 		init=FALSE
 		Y = simSolution()
-		n = length(Y[Y>=threshold])
-		if (n==k){
-			cat(sprintf("\n%f KPIs above the threshold %f\n", n, threshold))
+		if (Y>=threshold){
+			cat(sprintf("\nKPI above the threshold:  %f>=%f\n", Y, threshold))
 			setwd(wd)
 			writeSolutionLambda(lambda)
 			break
 		} else {
-			if(n>maxKPI){
+			if(Y>maxKPI){
 				sol = lambda
-				maxKPI = n
+				maxKPI = Y
 			}
 		}	
 	}
-	if(n<k){
+	if(Y<threshold){
 		setwd(wd)
 		writeSolutionLambda(sol)
-		cat(sprintf("\n%f KPIs above the threshold %f\n", maxKPI, threshold))
+		cat(sprintf("\nKPI value: %f < %f\n", maxKPI, threshold))
 	}
 }
 
-getGlobalMax = function(sol_X, sol, d, bounds, t){
-	a = (1:d)
-	u_x = a[! a %in% sol_X]
-	lower_u = getLowerBounds(bounds, u_x)
-	upper_u = getUpperBounds(bounds, u_x)
+getGlobalMax = function(solution, d, bounds, t){
+	lower = rep(0, model$d)
+	upper = rep(1, model$d)
+	for(i in (1:model$d)){
+		if(!is.na(solution[i])){
+			lower[i] = solution[i]
+			upper[i] = solution[i]
+		}
+	}
 
 
 	GA_sol <- ga(type="real-valued",fitness=utility, 
-		min=lower_u, max=upper_u,
+		min=lower, max=upper,
 		popSize=opt$popsize, maxiter=opt$maxiter, run=opt$runs,
-		maxFitness=model$k,monitor=TRUE)
+		maxFitness=1,monitor=TRUE)
 
 	
 	# summary(GA_sol)
 	return(GA_sol)
 }
 
+
 utility = function(u){
-	writeLambda(sol_X, solution, u)
-	Y = simSolution()
-	return(length(Y[Y>=threshold]))
+   simulateSamples(u)
 }
 
+
+
 if(opt$method == "random"){
-	cat("\n###########################\nPerforming Random Search...\n")
+	cat("\n###########################\nPerforming Random Experiments...\n")
 	getSolutionRandom(opt$maxiter,sol_X,solution,threshold,model$k)
 
 }else if(opt$method =="genetic"){
 	cat("\n###########################\nPerforming Search with GA...\n")
-	sol <- getGlobalMax(sol_X, solution, model$d, model$bounds,threshold)
+	sol <- getGlobalMax(solution, model$d, model$bounds,threshold)
+	cat("\n###########################\n")
+	cat(sprintf("Best solution: \n"))
+	print(summary(sol))
+}else if(opt$method =="random_search"){
+	cat("\n###########################\nPerforming Random Search...\n")
+	sol <- random.search(solution, 1000, opt$threshold)
 	cat("\n###########################\n")
 	cat(sprintf("Best solution: \n"))
 	print(summary(sol))
@@ -135,4 +148,37 @@ if(opt$method == "random"){
 
 
 
+# lambda = readDefaultLambda()
 
+# pred_lambda = c()
+# for(i in 1:length(lambda)){
+# 	pred_lambda = c(pred_lambda,getVarSolution(model$bounds, i, lambda[i]))
+# }
+
+# for(var in names(solution)){
+# 	sol_n = sol_X[var]
+#     # lambda[sol_n] <- getVarValue(model$bounds, sol_n, solution[[var]])
+# 	pred_lambda[sol_n] <- solution[[var]]
+# }
+
+
+
+
+#############################
+# WITH DEFAULT LAMBDA
+#############################
+
+# lambda = readDefaultLambda()
+
+
+# for(var in names(solution)){
+#     sol_n = sol_X[var]
+#     lambda[sol_n] <- getVarValue(model$bounds, sol_n, solution[[var]])
+# }
+
+
+
+
+# writeParameters(lambda)
+# Y = simSolution()
+# cat(sprintf("\nTHE FINAL KPI VALUE IS: %f\n",Y))

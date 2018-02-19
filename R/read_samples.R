@@ -23,13 +23,23 @@ getSamples = function(n, model, sampling, readSamples,wd, init=TRUE) {
         Train.X = samples[,(1:model$d)]
         Train.X = as.data.frame(Train.X)
         colnames(Train.X) = sapply((1:model$d), function(x){paste("X",x, sep="")})
-        Train.Y = samples[,((model$d+1): ncol(samples))]
-        Train.Y = as.data.frame(Train.Y)
-        Train.Y = Train.Y[,model$out_vars]
+
+        Train.Y = getSimResults(samples)
         if(model$k>1){
             colnames(Train.Y) = sapply((1:model$k), function(x){paste("Y",x, sep="")})
         }
         return(list(X=Train.X, Y=Train.Y))
         
     }
+}
+
+getSimResults = function(samples){
+    # Train.Y = samples[,((model$d+1): ncol(samples))]
+    # Train.Y = as.data.frame(Train.Y)
+    # Train.Y = Train.Y[,model$out_vars]
+
+    Train.Y = apply(samples,1,
+                function(row){
+                    min(row[(model$d+1):ncol(samples)])
+                    })
 }

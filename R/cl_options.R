@@ -9,13 +9,13 @@ CommandLineOptions = function() {
     make_option(c("-s", "--sampling"), type="character", default="halton", 
               help="Input space sampling method. (halton, random) [default= %default]", 
               metavar="character"),
-    make_option(c("-r", "--readsamples"), action="store_true", default=FALSE, 
+    make_option(c("-r", "--readsamples"), action="store_false", default=TRUE, 
               help="Read existing sample files. [default= %default]", 
               metavar="logical"),
     make_option(c("-c", "--readcoeff"), action="store_true", default=FALSE, 
               help="Read existing sample files. [default= %default]", 
               metavar="logical"),
-    make_option(c("-t", "--threshold"), type="numeric", default=0.9, 
+    make_option(c("-t", "--threshold"), type="numeric", default=0.7, 
               help="Threshold value for the KPIs [default= %default]", metavar="cnumeric"),
     make_option(c("-e", "--epsilon"), type="numeric", default=0.3, 
               help="Epsilon value for the SSIFL algorithm. [default= %default]", metavar="numeric"),
@@ -27,7 +27,7 @@ CommandLineOptions = function() {
               help="Pruning method for the MARS algorithm.[default= %default]", metavar="character"),
     make_option(c("-T", "--threshmars"), type="numeric", default=0.001, 
               help="thresh parameter for the MARS algorithm. [default= %default]", metavar="numeric"),
-    make_option(c("-P", "--penalty"), type="integer", default=-1, 
+    make_option(c("-P", "--penalty"), type="integer", default=2, 
               help="penalty parameter for the MARS algorithm. [default= %default]", metavar="integer")
 
   ); 

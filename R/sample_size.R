@@ -13,8 +13,9 @@ get_sPACC = function(epsilon, delta) {
 }
 
 sample_num = function(d, sval) {
-	if (d <= min_d) sval^l
-	else 10^sval
+	# if (d <= min_d) sval^l
+	# else 10^sval
+	sval^l
 }
 
 select_min_sval = function(d, epsilon, delta) {

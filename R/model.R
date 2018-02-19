@@ -13,6 +13,7 @@ model_name = "param_search_mdl"
 
 bounds_file = "bounds.csv" # input variables bounds
 param_file = "lambda.txt"  # input values file for a simulation
+default_param_file = "default_lambda.txt"  # default input values file 
 sim_command = "./Test"
 command_args = paste0("-overrideFile=", param_file)
 
@@ -23,7 +24,7 @@ d = 76 # inputs
 #  c(1:105) to select all variables
 #  c(1,3,78) to select only variables in columns 1,3 and 78
 
-out_vars = c(1:105)
+out_vars = c(1)
 k = length(out_vars)
 
 
@@ -32,19 +33,13 @@ k = length(out_vars)
 bounds = getBounds(paste(path, bounds_file, sep="/"))
 
 
-model = list(name=model_name, d=d, k=k, bounds=bounds, out_vars=out_vars)
 
 
-# Method that starts a simulation on a given input vector X.
-# Should return a k-dimensional (row) output vector Y
-simulate = function(X) {
-	writeParameters(X)
-	setwd(cmd_path)
-	res = system2(sim_command, command_args, stdout=TRUE)
-	parseSimulationResults(res)
-}
 
-writeParameters = function(X) {
+
+
+# Write input file from inputs X=(x1, ... , xd)
+write.input.file = function(X) {
 	fileConn = file(paste(cmd_path, param_file, sep="/"))
 	txt = character()
 	for (i in 1:d) {
@@ -53,106 +48,70 @@ writeParameters = function(X) {
 		
 	}
 	writeLines(txt, fileConn)
-	close(fileConn)	
+	close(fileConn)
 }
 
 # Parses the output of a simulation and returns the KPIs values
 # in a vector of length k
 parseSimulationResults = function(res) {
-	R = numeric(0)
 	allValues = numeric(0)
-	start = length(res)-3
-	end = length(res)-1
-	#res_as_list = strsplit(res, "\n")[[1]]
-	for(i in start:end) {
-		values = strsplit(res[i], " = ")[[1]][2]
-		values = strsplit(values[[1]], ",")
-		for (v in values) allValues = c(allValues, as.double(v))
-	}
-
-	for(var in out_vars) {
-		R = c(R, as.double(allValues[var]))
-	}
-	return(R)
-}
-
-writeSolutionLambdaHalton = function(X, results,init) {
-	lambda = gen_halton_samples(1, d, bounds,init)
-	fileConn = file(paste(cmd_path, param_file, sep="/"))
-	txt = character()
-	for (var in names(results)) {
-		lambda[X[var]] = results[[var]]
-	}
-
-	for (i in 1:d) {
-	p = sprintf("lambda[%d]=%f", i, lambda[i])
-	txt = c(txt, p)
-		
-	}
-	writeLines(txt, fileConn)
-	close(fileConn)	
-	return(txt)
-}
-
-
-simSolution = function() {
-	setwd(cmd_path)
-	res = system2(sim_command, command_args, stdout=TRUE)
-	start = length(res)-3
-	end = length(res)-1
-
-	R = numeric(0)
-	allValues = numeric(0)
-
-	for(i in start:end) {
-		values = strsplit(res[i], " = ")[[1]][2]
-		values = strsplit(values[[1]], ",")
-		for (v in values) allValues = c(allValues, as.double(v))
-	}
-
-	for(var in out_vars) {
-		R = c(R, as.double(allValues[var]))
-	}
-	return(R)
-}
-
-
-writeSolutionLambdaHalton = function(X, results,init) {
-	lambda = gen_halton_samples(1, d, bounds,init)
-	fileConn = file(paste(cmd_path, param_file, sep="/"))
-	txt = character()
-	for (var in names(results)) {
-		lambda[X[var]] = results[[var]]
-	}
-
-	for (i in 1:d) {
-	p = sprintf("lambda[%d]=%f", i, lambda[i])
-	txt = c(txt, p)
-		
-	}
-	writeLines(txt, fileConn)
-	close(fileConn)	
-	return(txt)
-}
-
-
-writeLambda = function(sol_X, solution, u){
-	fileConn = file(paste(cmd_path, param_file, sep="/"))
-	txt = character()
-	j = 1
-	for(i in (1:d)){
-		if(i %in% sol_X){
-			x = names(sol_X)[match(i, sol_X)]
-			p = sprintf("lambda[%d]=%f", i, solution[x])
-			#lambda = c(lambda, solution[x])
-		} else{
-			p = sprintf("lambda[%d]=%f", i, u[j])
-			#lambda = c(lambda,u[j])
-			j = j+1
+	for(i in (1:length(res))){
+		line = strsplit(res[i]," = ")[[1]]
+		if(line[1] == "CrossCorr"){
+			values = line[2]
+			values = strsplit(values, ",")[[1]]
+			for (v in values) allValues = c(allValues, as.double(v))
+			return(min(allValues))
 		}
-		txt = c(txt,p)
 	}
-	writeLines(txt, fileConn)
-	close(fileConn)	
-	return(txt)
+
+
+
+
 }
+
+
+
+# writeSolutionLambdaHalton = function(sol_X, solution,init) {
+# 	lambda = gen_halton_samples(1, d, bounds,init)
+# 	fileConn = file(paste(cmd_path, param_file, sep="/"))
+# 	txt = character()
+# 	for (var in names(solution)) {
+# 		lambda[sol_X[var]] = solution[[var]]
+# 	}
+
+# 	for (i in 1:d) {
+# 		vx = getVarValue(bounds, i, lambda[i])
+# 		p = sprintf("lambda[%d]=%f", i, vx)#lambda[i])
+# 		txt = c(txt, p)
+		
+# 	}
+# 	writeLines(txt, fileConn)
+# 	close(fileConn)	
+# 	return(txt)
+# }
+
+
+
+
+readDefaultLambda = function() {
+	default_filename = paste(cmd_path, default_param_file, sep="/")
+	lambda = readChar(default_filename, file.info(default_filename)$size)
+	lambda = strsplit(lambda, "\n")[[1]]
+	vals = c()
+	for(i in 1:length(lambda)){
+		v = as.double(strsplit(lambda[i], "=")[[1]][2])
+		vals = c(vals, v)
+	}
+	return(vals)
+
+}
+
+default = readDefaultLambda()
+
+default.samples = c()
+for(i in (1:d)){
+	default.samples = c(default.samples, getVarSolution(bounds, i, default[i]))
+}
+
+model = list(name=model_name, d=d, k=k, bounds=bounds, out_vars=out_vars, default=default, default.samples=default.samples)
