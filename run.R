@@ -37,8 +37,8 @@ if(!opt$readcoeff || !file.exists(coeff_file_name)){
 
 
 
-	n = 3125
-    samples = getSamples(n, model, opt$sampling, opt$readsamples,wd)
+	n = 10000
+    samples = getSamples(n, model, "uniform", opt$readsamples,wd)
     # index = seq(1, n, 3)
     # index = (1:10000)
     Train.X = samples$X
@@ -110,7 +110,7 @@ if(!opt$readcoeff || !file.exists(coeff_file_name)){
 
 	setwd(wd)
 
-	coeff_file_name = sprintf("output/coeff_%d.csv",n)
+	coeff_file_name = sprintf("output/coeff_%d_new.csv",1)
 	
 	write.csv(appr_model$coefficients, coeff_file_name, quote=FALSE)
 }
@@ -148,8 +148,8 @@ data$threshold = opt$threshold;
 # data_file_name = sprintf("AMPL/marsmdl_%dout_%dit_%fthresh_%dpen.dat",model$k, opt$maxiter, opt$threshmars,opt$penalty)
 # mdl_file_name = sprintf("AMPL/marsmdl_%dout_%dit_%fthresh_%dpen.mod",model$k, opt$maxiter, opt$threshmars,opt$penalty)
 
-data_file_name = sprintf("AMPL/marsmdl_%d.dat",n,model$k, opt$maxiter, opt$threshmars,opt$penalty)
-mdl_file_name = sprintf("AMPL/marsmdl_%d.mod",n,model$k, opt$maxiter, opt$threshmars,opt$penalty)
+data_file_name = sprintf("AMPL/marsmdl_%d_new.dat",n,model$k, opt$maxiter, opt$threshmars,opt$penalty)
+mdl_file_name = sprintf("AMPL/marsmdl_%d_newMAX.mod",n,model$k, opt$maxiter, opt$threshmars,opt$penalty)
 
 write.AMPL.data(data, data_file_name)
 
@@ -166,4 +166,5 @@ if(opt$problem=="max") {
 
 
 
-  
+ss = tx[which(ty==max(ty)),]
+ss = as.vector(t(as.matrix(ss)))

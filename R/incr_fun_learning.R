@@ -21,7 +21,7 @@ kurt_delta = 50
 
 deltas = c(mean_delta, var_delta, skew_delta, kurt_delta)
 
-learn_function = function(epsilon, delta, sampling, max_iter,
+learn_function_OLD = function(epsilon, delta, sampling, max_iter,
     readSamples,threshmars,penalty, pmethod, wd) {
     sval = select_min_sval(model$d, epsilon, delta)
     n = sample_num(model$d, sval)
@@ -38,11 +38,12 @@ learn_function = function(epsilon, delta, sampling, max_iter,
     while(TRUE) {
         Test.X = Train.X
         Test.Y = Train.Y
-        n = sample_num(model$d, sval+iter)
+        #n = sample_num(model$d, sval+iter)
+        n = iter*1000
         iter = iter + 1
         cat(sprintf("Started iteration %d with %d samples\n", iter, n))
         cat("Generating the samples...\n")
-        samples = getSamples(n, model, sampling, readSamples,wd, init=FALSE)
+        samples = getSamples(n, model, "uniform", readSamples,wd, init=FALSE)
         Train.X = samples$X
         Train.Y = samples$Y
 
@@ -52,12 +53,69 @@ learn_function = function(epsilon, delta, sampling, max_iter,
 
         err_momts[[iter]] = compute_errors(appr_model, Test.X, Test.Y)
         if (check_convergence(err_momts, iter, max_iter)) { 
-            #cat(sprintf("Convergence of errors reached at iteration %d!\n", iter))          
             break
         }        
     }
     return(list(appr_model=appr_model, errors=err_momts))
 }
+
+
+
+
+
+learn_function = function(epsilon, delta, sampling, max_iter,
+    readSamples,threshmars,penalty, pmethod, wd) {
+    sval = select_min_sval(model$d, epsilon, delta)
+    n = sample_num(model$d, sval)
+    cat(sprintf("Number of samples: %d\n", n))
+    cat(sprintf("Generating first %d test samples...\n", n))
+    samples = getSamples(n, model, sampling, readSamples,wd)
+
+    Train.X = samples$X
+    Train.Y = samples$Y
+    cat("Building the approximate model...\n")
+    appr_model = build_earth_appr_model(Train.X, Train.Y,threshmars,penalty,pmethod)
+    cat(sprintf("Model Rsquared: %f\n", appr_model$rsq))
+    cat(sprintf("Model GCV: %f\n", appr_model$gcv))
+    iter = 1
+
+    rsq = appr_model$rsq
+    gcv = appr_model$gcv
+
+    while(iter <= max_iter) {
+        X = Train.X
+        Y = Train.Y
+        m = iter*1000
+        iter = iter + 1
+
+        cat(sprintf("Started iteration %d with %d samples\n", iter, n+m))
+        cat("Generating the samples...\n")
+        samples = getSamples(m, model, "uniform", readSamples,wd, init=FALSE)
+        Train.X = samples$X
+        Train.Y = samples$Y
+        X = rbind(X, Train.X)
+        Y = c(Y, Train.Y)
+
+        cat("Updating the model...\n")
+
+        update(appr_model, x=X, y=Y)        
+        
+        cat(sprintf("Iteration %d completed\n", iter))
+        cat(sprintf("Model Rsquared: %f\n", appr_model$rsq))
+        cat(sprintf("Model GCV: %f\n", appr_model$gcv))
+
+        if (appr_model$rsq <= rsq || appr_model$gcv <= gcv) { 
+            break
+        }
+        rsq = appr_model$rsq
+        gcv = appr_model$gcv      
+    }
+    return(appr_model)
+}
+
+
+
+
 
 
 

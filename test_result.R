@@ -100,7 +100,7 @@ getSolutionRandom = function(maxiter,sol_X, solution,threshold,k){
 	}
 }
 
-getGlobalMax = function(solution, d, bounds, t){
+getGlobalMax = function(solution, d, t, suggestions=NULL){
 	lower = rep(0, model$d)
 	upper = rep(1, model$d)
 	for(i in (1:model$d)){
@@ -114,7 +114,7 @@ getGlobalMax = function(solution, d, bounds, t){
 	GA_sol <- ga(type="real-valued",fitness=utility, 
 		min=lower, max=upper,
 		popSize=opt$popsize, maxiter=opt$maxiter, run=opt$runs,
-		maxFitness=1,monitor=TRUE)
+		maxFitness=1,monitor=TRUE,suggestions=suggestions)
 
 	
 	# summary(GA_sol)
@@ -134,10 +134,10 @@ if(opt$method == "random"){
 
 }else if(opt$method =="genetic"){
 	cat("\n###########################\nPerforming Search with GA...\n")
-	sol <- getGlobalMax(solution, model$d, model$bounds,threshold)
+	#sol <- getGlobalMax(solution, model$d, model$bounds,threshold)
 	cat("\n###########################\n")
 	cat(sprintf("Best solution: \n"))
-	print(summary(sol))
+	#print(summary(sol))
 }else if(opt$method =="random_search"){
 	cat("\n###########################\nPerforming Random Search...\n")
 	sol <- random.search(solution, 1000, opt$threshold)
@@ -182,3 +182,22 @@ if(opt$method == "random"){
 # writeParameters(lambda)
 # Y = simSolution()
 # cat(sprintf("\nTHE FINAL KPI VALUE IS: %f\n",Y))
+
+
+
+get.predictors = function(appr_model){
+	imp = evimp(appr_model)
+	predictors=sapply(rownames(imp), 
+		function(x){as.numeric(gsub("X","",x))})
+
+	for(i in sample(1:model$d)){
+		if (!(i %in% predictors)) {
+			predictors = c(predictors,i)
+		}
+	}
+
+	names(predictors) = NULL
+
+	return(predictors)
+
+}

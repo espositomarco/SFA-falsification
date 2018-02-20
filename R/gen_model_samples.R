@@ -9,6 +9,9 @@ gen_output_samples = function(inputs, k) {
 		do.call(simulateSamples, list(row))
 	}
 		)
-	if (k > 1) return(t(Y))
-	else return(Y)
+	if (k > 1) Y = t(Y)
+
+	# Y = as.data.frame(Y)
+ #    colnames(Y) = sapply((1:k), function(x){paste("Y",x, sep="")})
+	return(Y)
 }

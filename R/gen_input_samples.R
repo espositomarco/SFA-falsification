@@ -2,11 +2,11 @@ library(randtoolbox)
 source("R/getBounds.R")
 
 gen_input_samples = function(n, d, bounds, sampling="halton", init=TRUE) {
-	if (sampling=="halton") return(gen_halton_samples(n, d, bounds, init))
-	else if (sampling=="uniform") return(gen_rand_input_samples(n,d,bounds))
+	if (sampling=="halton") return(gen_halton_samples(n, d, init))
+	else if (sampling=="uniform") return(gen.random.inputs(n,d))
 	else {
-		print("Using random uniform samping.")
-		return(gen_rand_input_samples(n,d,bounds))
+		cat("Using random uniform samping.\n")
+		return(gen.random.inputs(n,d))
 	}
 }
 
@@ -21,14 +21,8 @@ gen_rand_input_samples = function(n, d, bounds) {
 # Given the number of observation n, the dimension of each observation d,
 # returns a n x d matrix of input samples generated through Halton Sequences, 
 # with each parameter scaled to its range, according to bounds
-gen_halton_samples = function(n, d, bounds, init=TRUE) {
-	X = halton(n, d, init=init)
-	# for (i in 1:d) {
-	# 	up = upr(bounds, i)
-	# 	lo = lwr(bounds, i)
-	# 	X[,i] = X[,i] * (up-lo) + lo
-	# }
-	return(X)	
+gen_halton_samples = function(n, d, init=TRUE) {
+	return(halton(n, d, init=init))
 }
 
 gen.random.inputs = function(n, d){

@@ -1,0 +1,16 @@
+data;
+
+set INPUTS := 
+X3 X10 X22 X28 X29 X30 X55 X63 X66 X72
+;
+
+
+set OUTPUTS := 
+Y1
+;
+
+
+param intercept := 
+Y1 0.00530594380481055
+;
+

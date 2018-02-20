@@ -17,7 +17,7 @@ build_earth_appr_model = function(X, Y, thresh, penalty,pmethod) {
 	#earth(x=X, y=Y, degree=degree, nfold = CVnFold, Scale.y=(nrow(Y)> MIN_SCALE), keepxy=TRUE)
 	#earth(x=X, y=Y, degree=degree, nfold = CVnFold,pmethod="none")#, keepxy=TRUE) #, nk=5)
 	earth(x=X, y=Y, #penalty=penalty, thresh=thresh, 
-	Scale.y=TRUE, keepxy=TRUE,trace=1)#,
+	 keepxy=TRUE,trace=1)#,
 	#nfold=CVnFold, pmethod=pmethod )
 }
 
