@@ -5,7 +5,7 @@
 
 
 
-source("R/model.R")
+source("R/Model.R")
 source("R/appr_model.R")
 source("R/sample_size.R")
 source("R/gen_input_samples.R")

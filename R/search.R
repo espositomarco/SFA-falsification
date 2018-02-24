@@ -116,7 +116,7 @@ random.neighbor = function(base, step) {
 
 ##########################################################
 
-my.random.search = function(appr_model, initial, max_iter, threshold, mstep=0.01, maxValue=1, restart=0.05) {
+my.random.search = function(appr_model, initial, max_iter, threshold, mstep=0.01, maxValue=24, restart=0.05) {
 	#predictors <- get.predictors(appr_model)
 
 
@@ -169,7 +169,7 @@ my.random.neighbor = function(base, appr_model, mstep, y_curr) {
 			return(list(new=v_base, y=y))
 		}
 
-		v_base[v] = min(1,base[v] + step)
+		v_base[v] = min(1,base[v] + mstep)
 		y = simulateSamples(v_base)
 		if(y>y_curr){
 			cat(sprintf("Improved at %d\n",v))
@@ -182,8 +182,8 @@ my.random.neighbor = function(base, appr_model, mstep, y_curr) {
 
 	v = sample((1:length(base)),1)
 	r = runif(1, 0.0, 1.0)
-	if(with.prob(0.5)){ base[v] = max(0,base[v] - step) }
-	else { base[v] = min(1,base[v] + step)}
+	if(with.prob(0.5)){ base[v] = max(0,base[v] - mstep) }
+	else { base[v] = min(1,base[v] + mstep)}
 	y = simulateSamples(base)
 	return(list(new=base, y=y))
 }

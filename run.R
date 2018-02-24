@@ -34,16 +34,37 @@ if(!opt$readcoeff || !file.exists(coeff_file_name)){
 	# appr_model = learn_res$appr_model
 	# errors = learn_res$errors
 
+	samples = getSamples(100, model, "halton", F,wd)
+	Train.X = samples$X
+    Train.Y = samples$Y
+
+	path="samples/param_search_mdl"
+	files = c("10000_c", "3125_c", "c_100000", "r_1000", "r_10000_c", "r_1000_c", "r_100_c",  "1000")
+
+	for(f in files){
+		fname = sprintf("%s/%s.csv",path, f)
+		samples = getSamples(n, model, "", T,wd,filename=fname)
+		tx = samples$X
+		ty= samples$Y
+
+		Train.X = rbind(Train.X, tx)
+		Train.Y = c(Train.Y, ty)
+	}
 
 
-
-	n = 10000
-    samples = getSamples(n, model, "uniform", opt$readsamples,wd)
+	#n = 1000
+    #samples = getSamples(n, model, "uniform", opt$readsamples,wd)
     # index = seq(1, n, 3)
     # index = (1:10000)
-    Train.X = samples$X
-    Train.Y = samples$Y
-    appr_model = build_earth_appr_model(Train.X, Train.Y,threshmars,penalty,pmethod)
+    #Train.X = samples$X
+    #Train.Y = samples$Y
+    #Train.Y = sapply(Train.Y, function(x) max(0.0001, x))
+	#appr_model = update(appr_model, x=Train.X, y=Train.Y)
+
+    appr_model = build_earth_appr_model(Train.X, Train.Y)
+
+
+
 
     cat("\nMODEL BUILT\n")
 	val_set_filename = "samples/param_search_mdl/243.csv"

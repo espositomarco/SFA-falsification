@@ -1,7 +1,8 @@
 # Author: Marco Esposito
 
 source("R/getBounds.R")
-source("R/model.R")
+source("R/Model.R")
+source("init_model.R")
 
 
 
@@ -30,16 +31,6 @@ get.input.values = function(S, partial=NULL) {
 
 # Completes a partial solution with the default input values of the model
 merge.solution.default = function(solution){
-	# values = c()
-	# for(i in (1:model$d)){
-	# 	if (is.na(solution[i])){
-	# 		values = c(values, model$default[i])
-	# 	} else{
-	# 		values = c(values, getVarValue(model$bounds, i,solution[i] ))
-	# 	}
-	# }
-	# return(values)
-
 	return(get.input.values(model$default.samples, partial=solution))
 }
 
@@ -50,7 +41,7 @@ simulateSamples = function(S=NULL, partial=NULL) {
 	if(missing(S) && !missing(partial)) {stop()}
 	if(!missing(S)){
 		X = get.input.values(S,partial)
-		write.input.file(X)
+		model$write.input.file(X)
 	}
 	
 	
@@ -62,7 +53,7 @@ simulateSamples = function(S=NULL, partial=NULL) {
 simulateInputs = function(inputs) {
 	if(missing(inputs)) {stop()}	
 	
-	write.input.file(inputs)
+	model$write.input.file(inputs)
 	
 	return(execSimulation())
 	
@@ -71,7 +62,13 @@ simulateInputs = function(inputs) {
 execSimulation = function() {
 	setwd(cmd_path)
 	res = system2(sim_command, command_args, stdout=TRUE)
-	return(parseSimulationResults(res))
+	model$parse.simulation.output(res)
+	
 }
 
 
+get.sims.KPIs = function(outputs){
+	KPIs = apply(outputs, 1, model$extract.KPIs)
+	if(model$k==1) return(KPIs)
+	t(KPIs)
+}

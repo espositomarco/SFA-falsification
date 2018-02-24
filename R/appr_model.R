@@ -13,11 +13,11 @@ CVnFold = 0
 MIN_SCALE = 10
 
 # Builds an additive MARS model with scaling of Y (if more than 10 samples)
-build_earth_appr_model = function(X, Y, thresh, penalty,pmethod) {
+build_earth_appr_model = function(X, Y, thresh=0.001, penalty=2,pmethod="backward") {
 	#earth(x=X, y=Y, degree=degree, nfold = CVnFold, Scale.y=(nrow(Y)> MIN_SCALE), keepxy=TRUE)
 	#earth(x=X, y=Y, degree=degree, nfold = CVnFold,pmethod="none")#, keepxy=TRUE) #, nk=5)
 	earth(x=X, y=Y, #penalty=penalty, thresh=thresh, 
-	 keepxy=TRUE,trace=1)#,
+	 keepxy=TRUE,trace=1)#, thresh=thresh)#,
 	#nfold=CVnFold, pmethod=pmethod )
 }
 

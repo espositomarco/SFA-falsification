@@ -24,7 +24,7 @@ d = 76 # inputs
 #  c(1:105) to select all variables
 #  c(1,3,78) to select only variables in columns 1,3 and 78
 
-out_vars = c(1)
+out_vars = c(1:105)
 k = length(out_vars)
 
 
@@ -61,7 +61,10 @@ parseSimulationResults = function(res) {
 			values = line[2]
 			values = strsplit(values, ",")[[1]]
 			for (v in values) allValues = c(allValues, as.double(v))
-			return(min(allValues))
+			#return(min(allValues))
+			#return(length(which(allValues>0.7))/length(allValues))
+			#return(length(which(allValues>0.7)))
+			return(allValues)
 		}
 	}
 
@@ -71,25 +74,6 @@ parseSimulationResults = function(res) {
 }
 
 
-
-# writeSolutionLambdaHalton = function(sol_X, solution,init) {
-# 	lambda = gen_halton_samples(1, d, bounds,init)
-# 	fileConn = file(paste(cmd_path, param_file, sep="/"))
-# 	txt = character()
-# 	for (var in names(solution)) {
-# 		lambda[sol_X[var]] = solution[[var]]
-# 	}
-
-# 	for (i in 1:d) {
-# 		vx = getVarValue(bounds, i, lambda[i])
-# 		p = sprintf("lambda[%d]=%f", i, vx)#lambda[i])
-# 		txt = c(txt, p)
-		
-# 	}
-# 	writeLines(txt, fileConn)
-# 	close(fileConn)	
-# 	return(txt)
-# }
 
 
 

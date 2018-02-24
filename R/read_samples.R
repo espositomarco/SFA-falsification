@@ -1,49 +1,51 @@
 # Author: Marco Esposito
 
-getSamples = function(n, model, sampling, readSamples,wd, init=TRUE) {
-    if(sampling=="halton"){
-        filename = sprintf("samples/%s/%d_c.csv", model$name, n)
+source("R/gen_input_samples.R")
+source("R/gen_model_samples.R")
 
-    }else{
-        filename = sprintf("samples/%s/r_%d_c.csv", model$name, n)
+getSamples = function(n, model, sampling, readSamples,wd, filename=NULL, init=TRUE) {
+    if(missing(filename)){
+        if(sampling=="halton"){
+            filename = sprintf("samples/%s/all_%d.csv", model$name, n)
+        }else{
+            filename = sprintf("samples/%s/%d_105.csv", model$name, n)
+        }
     }
+
+    print(filename)
+    
     setwd(wd)
     if (!readSamples || !file.exists(filename)){
-        Train.X = gen_input_samples(n, model$d, model$bounds, sampling,init)
-        Train.X = as.data.frame(Train.X)
-        colnames(Train.X) = sapply((1:model$d), function(x){paste("X",x, sep="")})
+        X = gen_input_samples(n, model$d, sampling,init)
+        
+        Y = gen_output_samples(X, model$k)
 
-        Train.Y = gen_output_samples(Train.X, model$k)
-        Train.Y = as.data.frame(Train.Y)
-        colnames(Train.Y) = sapply((1:model$k), function(x){paste("Y",x, sep="")})
+        X = as.data.frame(X)
+        colnames(X) = sapply((1:model$d), function(x){paste("X",x, sep="")})
+
+        Y = as.data.frame(Y)
+        colnames(Y) = sapply((1:model$k), function(x){paste("Y",x, sep="")})
         setwd(wd)
         
-        write.csv(cbind(Train.X, Train.Y), 
+        write.csv(cbind(X, Y), 
             file=filename,row.names=FALSE,quote=FALSE)
-        return(list(X=Train.X, Y=Train.Y))
+        return(list(X=X, Y=Y))
     } else {
         cat("Reading samples from file.\n")
         nobug = halton(n, model$d, init=init)
         setwd(wd)
         samples = read.csv(filename,header=TRUE)
-        Train.X = samples[,(1:model$d)]
-        Train.X = as.data.frame(Train.X)
-        colnames(Train.X) = sapply((1:model$d), function(x){paste("X",x, sep="")})
+        X = samples[,(1:model$d)]
+        #X = as.data.frame(X)
+        colnames(X) = sapply((1:model$d), function(x){paste("X",x, sep="")})
 
-        Train.Y = getSimResults(samples)
+        outputs = samples[,(model$d+1):(ncol(samples))]
+        Y = get.sims.KPIs(outputs)
         if(model$k>1){
-            colnames(Train.Y) = sapply((1:model$k), function(x){paste("Y",x, sep="")})
+            colnames(Y) = sapply((1:model$k), function(x){paste("Y",x, sep="")})
         }
-        return(list(X=Train.X, Y=Train.Y))
+        return(list(X=X, Y=Y))
         
     }
 }
 
-getSimResults = function(samples){
-    Train.Y = apply(samples,1,
-                function(row){
-                    m = min(row[(model$d+1):ncol(samples)])
-                    if (m < 10e-4) m = 10e-4
-                    return(m)
-                    })
-}
